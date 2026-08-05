@@ -33,4 +33,8 @@ public class User {
     private String tier = "free";
 
     private String salaryPromptStatus = "not_shown";
+
+    private String firstName;
+    private String lastName;
+    private String status;
 }
