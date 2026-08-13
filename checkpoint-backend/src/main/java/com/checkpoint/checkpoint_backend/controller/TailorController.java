@@ -26,9 +26,16 @@ public class TailorController {
     }
 
     @PostMapping("/{id}/tailor")
-    public ResponseEntity<TailorResponse> tailor(Authentication auth, @PathVariable UUID id,
-                                                 @Valid @RequestBody TailorRequest request) {
-        return ResponseEntity.ok(tailorService.tailor(auth.getName(), id, request));
+    public ResponseEntity<?> tailor(Authentication auth, @PathVariable UUID id,
+                                    @Valid @RequestBody TailorRequest request) {
+        try {
+            return ResponseEntity.ok(tailorService.tailor(auth.getName(), id, request));
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("limit reached")) {
+                return ResponseEntity.status(429).body(e.getMessage());
+            }
+            throw e;
+        }
     }
 
     @PostMapping("/{id}/versions")
