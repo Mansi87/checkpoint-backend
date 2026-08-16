@@ -7,9 +7,11 @@ import com.checkpoint.checkpoint_backend.model.BaseResume;
 import com.checkpoint.checkpoint_backend.model.User;
 import com.checkpoint.checkpoint_backend.repository.BaseResumeRepository;
 import com.checkpoint.checkpoint_backend.repository.UserRepository;
+import com.checkpoint.checkpoint_backend.security.RlsSessionHelper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import tools.jackson.databind.ObjectMapper;
 
@@ -24,6 +26,9 @@ public class TailorService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     @Value("${ml.tailor.url}")
     private String mlServiceUrl;
 
@@ -37,7 +42,9 @@ public class TailorService {
         this.restTemplate = restTemplate;
     }
 
+    @Transactional
     public TailorResponse tailor(String userEmail, UUID resumeId, TailorRequest request) {
+        RlsSessionHelper.applyCurrentUser(entityManager);
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 

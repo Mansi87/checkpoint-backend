@@ -6,8 +6,10 @@ import com.checkpoint.checkpoint_backend.model.BaseResume;
 import com.checkpoint.checkpoint_backend.model.User;
 import com.checkpoint.checkpoint_backend.repository.BaseResumeRepository;
 import com.checkpoint.checkpoint_backend.repository.UserRepository;
+import com.checkpoint.checkpoint_backend.security.RlsSessionHelper;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +21,9 @@ public class BaseResumeService {
     private final BaseResumeRepository baseResumeRepository;
     private final UserRepository userRepository;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     public BaseResumeService(BaseResumeRepository baseResumeRepository, UserRepository userRepository) {
         this.baseResumeRepository = baseResumeRepository;
         this.userRepository = userRepository;
@@ -29,7 +34,9 @@ public class BaseResumeService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
+    @Transactional
     public BaseResumeResponse create(String userEmail, BaseResumeRequest request) {
+        RlsSessionHelper.applyCurrentUser(entityManager);
         User user = getUserByEmail(userEmail);
 
         BaseResume resume = new BaseResume();
@@ -43,17 +50,21 @@ public class BaseResumeService {
         return toResponse(saved);
     }
 
+    @Transactional
     public List<BaseResumeResponse> getAllForUser(String userEmail) {
+        RlsSessionHelper.applyCurrentUser(entityManager);
         User user = getUserByEmail(userEmail);
         return baseResumeRepository.findByUserId(user.getId())
                 .stream().map(this::toResponse).collect(Collectors.toList());
     }
 
+    @Transactional
     public BaseResumeResponse getOne(String userEmail, UUID resumeId) {
         BaseResume resume = getOwnedResume(userEmail, resumeId);
         return toResponse(resume);
     }
 
+    @Transactional
     public BaseResumeResponse update(String userEmail, UUID resumeId, BaseResumeRequest request) {
         BaseResume resume = getOwnedResume(userEmail, resumeId);
 
@@ -65,6 +76,7 @@ public class BaseResumeService {
         return toResponse(saved);
     }
 
+    @Transactional
     public void delete(String userEmail, UUID resumeId) {
         BaseResume resume = getOwnedResume(userEmail, resumeId);
         baseResumeRepository.delete(resume);
@@ -72,6 +84,7 @@ public class BaseResumeService {
 
     // Authorization check lives here — reused by get/update/delete
     private BaseResume getOwnedResume(String userEmail, UUID resumeId) {
+        RlsSessionHelper.applyCurrentUser(entityManager);
         User user = getUserByEmail(userEmail);
         BaseResume resume = baseResumeRepository.findById(resumeId)
                 .orElseThrow(() -> new RuntimeException("Resume not found"));

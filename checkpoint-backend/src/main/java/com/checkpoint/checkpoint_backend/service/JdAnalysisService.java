@@ -9,9 +9,11 @@ import com.checkpoint.checkpoint_backend.model.User;
 import com.checkpoint.checkpoint_backend.repository.BaseResumeRepository;
 import com.checkpoint.checkpoint_backend.repository.JdAnalysisRepository;
 import com.checkpoint.checkpoint_backend.repository.UserRepository;
+import com.checkpoint.checkpoint_backend.security.RlsSessionHelper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import tools.jackson.databind.ObjectMapper;
 
@@ -29,6 +31,9 @@ public class JdAnalysisService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     @Value("${ml.service.url}")
     private String mlServiceUrl;
 
@@ -39,8 +44,9 @@ public class JdAnalysisService {
         this.jdAnalysisRepository = jdAnalysisRepository;
         this.restTemplate = restTemplate;
     }
-
+    @Transactional
     public JdAnalysisResponse analyze(String userEmail, UUID resumeId, JdAnalysisRequest request) {
+        RlsSessionHelper.applyCurrentUser(entityManager);
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 

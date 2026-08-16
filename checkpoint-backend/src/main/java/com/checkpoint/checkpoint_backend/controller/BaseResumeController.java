@@ -36,8 +36,12 @@ public class BaseResumeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BaseResumeResponse> getOne(Authentication auth, @PathVariable UUID id) {
-        return ResponseEntity.ok(baseResumeService.getOne(auth.getName(), id));
+    public ResponseEntity<?> getOne(Authentication auth, @PathVariable UUID id) {
+        try {
+            return ResponseEntity.ok(baseResumeService.getOne(auth.getName(), id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")

@@ -42,7 +42,7 @@ public class AuthController {
         user.setStatus(request.getStatus());
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user.getEmail(), user.getId());
         return ResponseEntity.ok(new AuthResponse(token, user.getEmail()));
     }
 
@@ -55,7 +55,7 @@ public class AuthController {
             return ResponseEntity.status(401).body("Invalid email or password");
         }
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user.getEmail(), user.getId());
         return ResponseEntity.ok(new AuthResponse(token, user.getEmail()));
     }
 
@@ -92,7 +92,7 @@ public class AuthController {
             userRepository.save(user);
         }
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user.getEmail(), user.getId());
         return ResponseEntity.ok(new AuthResponse(token, user.getEmail()));
     }
 }

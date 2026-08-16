@@ -43,6 +43,7 @@ public class ParseService {
         ParsedResumeResponse response = new ParsedResumeResponse();
         response.setExtractedFields((Map<String, String>) mlResponse.get("extractedFields"));
         response.setConfidence((Map<String, Boolean>) mlResponse.get("confidence"));
+        response.setSections((Map<String, List<String>>) mlResponse.get("sections"));
         response.setCompletenessFlags(checkCompleteness(response.getExtractedFields(), response.getConfidence()));
 
         return response;

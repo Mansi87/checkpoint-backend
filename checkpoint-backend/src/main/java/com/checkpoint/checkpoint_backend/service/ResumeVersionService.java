@@ -8,8 +8,10 @@ import com.checkpoint.checkpoint_backend.model.User;
 import com.checkpoint.checkpoint_backend.repository.BaseResumeRepository;
 import com.checkpoint.checkpoint_backend.repository.ResumeVersionRepository;
 import com.checkpoint.checkpoint_backend.repository.UserRepository;
+import com.checkpoint.checkpoint_backend.security.RlsSessionHelper;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
@@ -23,6 +25,9 @@ public class ResumeVersionService {
     private final ResumeVersionRepository resumeVersionRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     public ResumeVersionService(BaseResumeRepository baseResumeRepository, UserRepository userRepository,
                                 ResumeVersionRepository resumeVersionRepository) {
         this.baseResumeRepository = baseResumeRepository;
@@ -30,7 +35,9 @@ public class ResumeVersionService {
         this.resumeVersionRepository = resumeVersionRepository;
     }
 
+    @Transactional
     public Map<String, Object> saveVersion(String userEmail, UUID resumeId, SaveVersionRequest request) {
+        RlsSessionHelper.applyCurrentUser(entityManager);
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -66,7 +73,9 @@ public class ResumeVersionService {
         return result;
     }
 
+    @Transactional
     public List<Map<String, Object>> getVersionHistory(String userEmail, UUID resumeId) {
+        RlsSessionHelper.applyCurrentUser(entityManager);
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
