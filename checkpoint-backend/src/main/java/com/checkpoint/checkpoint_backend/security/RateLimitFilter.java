@@ -24,8 +24,28 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final JedisBasedProxyManager<String> proxyManager;
 
     public RateLimitFilter(@Value("${redis.url}") String redisUrl) {
-        JedisPool jedisPool = new JedisPool(redisUrl);
-        this.proxyManager = JedisBasedProxyManager.builderFor(jedisPool).withKeyMapper(Mapper.STRING).build();
+        try {
+            java.net.URI uri = new java.net.URI(redisUrl);
+            redis.clients.jedis.HostAndPort hostAndPort = new redis.clients.jedis.HostAndPort(uri.getHost(), uri.getPort());
+
+            String password = null;
+            if (uri.getUserInfo() != null) {
+                String[] parts = uri.getUserInfo().split(":", 2);
+                password = parts.length > 1 ? parts[1] : parts[0];
+            }
+
+            redis.clients.jedis.DefaultJedisClientConfig.Builder configBuilder =
+                    redis.clients.jedis.DefaultJedisClientConfig.builder().ssl(true);
+
+            if (password != null) {
+                configBuilder.password(password);
+            }
+
+            JedisPool jedisPool = new JedisPool(hostAndPort, configBuilder.build());
+            this.proxyManager = JedisBasedProxyManager.builderFor(jedisPool).withKeyMapper(Mapper.STRING).build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize Redis connection", e);
+        }
     }
 
     private Supplier<BucketConfiguration> configSupplier() {
