@@ -2,26 +2,36 @@ package com.checkpoint.checkpoint_backend.security;
 
 
 import io.github.bucket4j.*;
+import io.github.bucket4j.distributed.proxy.ProxyManager;
+import io.github.bucket4j.redis.jedis.cas.JedisBasedProxyManager;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import redis.clients.jedis.JedisPool;
+import io.github.bucket4j.distributed.serialization.Mapper;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final JedisBasedProxyManager<String> proxyManager;
 
-    private Bucket newBucket() {
-        Bandwidth limit = Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1)));
-        return Bucket.builder().addLimit(limit).build();
+    public RateLimitFilter(@Value("${redis.url}") String redisUrl) {
+        JedisPool jedisPool = new JedisPool(redisUrl);
+        this.proxyManager = JedisBasedProxyManager.builderFor(jedisPool).withKeyMapper(Mapper.STRING).build();
+    }
+
+    private Supplier<BucketConfiguration> configSupplier() {
+        return () -> io.github.bucket4j.BucketConfiguration.builder()
+                .addLimit(Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1))))
+                .build();
     }
 
     @Override
@@ -32,8 +42,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
         boolean limited = path.startsWith("/api/auth/") || path.contains("/analyze-jd") || path.contains("/tailor");
 
         if (limited) {
-            String key = request.getRemoteAddr() + ":" + path;
-            Bucket bucket = buckets.computeIfAbsent(key, k -> newBucket());
+            String userId = TenantContext.getUserId() != null ? TenantContext.getUserId().toString() : request.getRemoteAddr();
+            String key = userId + ":" + path;
+
+            Bucket bucket = proxyManager.builder().build(key, configSupplier());
 
             if (!bucket.tryConsume(1)) {
                 response.setStatus(429);
@@ -41,7 +53,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 return;
             }
         }
-
         filterChain.doFilter(request, response);
     }
 }
