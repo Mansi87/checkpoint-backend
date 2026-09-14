@@ -85,4 +85,21 @@ public class JdAnalysisService {
 
         return new JdAnalysisResponse(saved.getId(), atsScore, missingKeywords);
     }
+
+    @Transactional
+    public java.util.List<java.util.Map<String, Object>> getRecentForUser(String userEmail) {
+        RlsSessionHelper.applyCurrentUser(entityManager);
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return jdAnalysisRepository.findTop5ByBaseResume_User_IdOrderByCreatedAtDesc(user.getId())
+                .stream().map(a -> {
+                    java.util.Map<String, Object> m = new java.util.HashMap<>();
+                    m.put("id", a.getId());
+                    m.put("baseResumeId", a.getBaseResume().getId());
+                    m.put("baseScore", a.getBaseScore());
+                    m.put("createdAt", a.getCreatedAt());
+                    return m;
+                }).collect(java.util.stream.Collectors.toList());
+    }
 }

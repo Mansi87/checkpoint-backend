@@ -27,4 +27,9 @@ public class JdAnalysisController {
                                                         @Valid @RequestBody JdAnalysisRequest request) {
         return ResponseEntity.ok(jdAnalysisService.analyze(auth.getName(), id, request));
     }
+
+    @GetMapping("/recent")
+    public ResponseEntity<java.util.List<java.util.Map<String, Object>>> getRecent(Authentication auth) {
+        return ResponseEntity.ok(jdAnalysisService.getRecentForUser(auth.getName()));
+    }
 }

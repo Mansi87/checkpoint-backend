@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface ResumeVersionRepository extends JpaRepository<ResumeVersion, UUID> {
 
     List<ResumeVersion> findByBaseResumeIdOrderByCreatedAtDesc(UUID baseResumeId);
+    List<ResumeVersion> findTop5ByBaseResume_User_IdOrderByCreatedAtDesc(java.util.UUID userId);
 }

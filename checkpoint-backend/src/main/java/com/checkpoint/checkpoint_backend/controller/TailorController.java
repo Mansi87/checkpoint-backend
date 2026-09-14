@@ -48,4 +48,20 @@ public class TailorController {
     public ResponseEntity<List<Map<String, Object>>> getVersions(Authentication auth, @PathVariable UUID id) {
         return ResponseEntity.ok(resumeVersionService.getVersionHistory(auth.getName(), id));
     }
+
+    @GetMapping("/{id}/versions/{versionId}")
+    public ResponseEntity<java.util.Map<String, Object>> getVersionDetail(Authentication auth, @PathVariable UUID id, @PathVariable UUID versionId) {
+        return ResponseEntity.ok(resumeVersionService.getVersionDetail(auth.getName(), id, versionId));
+    }
+
+    @PostMapping("/{id}/versions/{versionId}/restore")
+    public ResponseEntity<Void> restoreVersion(Authentication auth, @PathVariable UUID id, @PathVariable UUID versionId) {
+        resumeVersionService.restoreVersion(auth.getName(), id, versionId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/versions/recent")
+    public ResponseEntity<List<Map<String, Object>>> getRecentVersions(Authentication auth) {
+        return ResponseEntity.ok(resumeVersionService.getRecentForUser(auth.getName()));
+    }
 }
